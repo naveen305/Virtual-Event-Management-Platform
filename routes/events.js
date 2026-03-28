@@ -210,6 +210,11 @@ router.delete('/:id/unregister', authenticate, authorize('attendee'), async (req
             return res.status(404).json({ error: 'Event not found' });
         }
 
+        // Check if actually registered
+        if (!event.participants.includes(req.user.id)) {
+            return res.status(400).json({ error: 'You are not registered for this event' });
+        }
+
         // Remove participant
         await Event.findByIdAndUpdate(req.params.id, {
             $pull: { participants: req.user.id }
