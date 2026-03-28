@@ -5,7 +5,49 @@ const { sendRegistrationEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
-// Create event: organizer-only
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Event:
+ *       type: object
+ *       required:
+ *         - title
+ *         - date
+ *       properties:
+ *         title:
+ *           type: string
+ *         description:
+ *           type: string
+ *         date:
+ *           type: string
+ *           format: date
+ *         time:
+ *           type: string
+ *         location:
+ *           type: string
+ */
+
+/**
+ * @swagger
+ * /events:
+ *   post:
+ *     summary: Create a new event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Event'
+ *     responses:
+ *       201:
+ *         description: Event created
+ *       403:
+ *         description: Forbidden (Organizer only)
+ */
 router.post('/', authenticate, authorize('organizer'), async (req, res) => {
     try {
         const { title, description, date, time, location } = req.body;
@@ -24,7 +66,18 @@ router.post('/', authenticate, authorize('organizer'), async (req, res) => {
     }
 });
 
-// List all events: any authenticated user
+/**
+ * @swagger
+ * /events:
+ *   get:
+ *     summary: List all events
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of events
+ */
 router.get('/', authenticate, async (req, res) => {
     try {
         const events = await Event.find().populate('organizer', 'name email');
@@ -34,7 +87,26 @@ router.get('/', authenticate, async (req, res) => {
     }
 });
 
-// Get single event: populate organizer and participants
+/**
+ * @swagger
+ * /events/{id}:
+ *   get:
+ *     summary: Get a single event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event details
+ *       404:
+ *         description: Event not found
+ */
 router.get('/:id', authenticate, async (req, res) => {
     try {
         const event = await Event.findById(req.params.id)
@@ -51,6 +123,30 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Register attendee for an event
+/**
+ * @swagger
+ * /events/{id}/register:
+ *   post:
+ *     summary: Register for an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Registered successfully
+ *       400:
+ *         description: Event past or other validation error
+ *       403:
+ *         description: Forbidden (Organizer cannot register for own event)
+ *       409:
+ *         description: Already registered
+ */
 router.post('/:id/register', authenticate, authorize('attendee'), async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -88,7 +184,24 @@ router.post('/:id/register', authenticate, authorize('attendee'), async (req, re
     }
 });
 
-// Unregister attendee from an event
+/**
+ * @swagger
+ * /events/{id}/unregister:
+ *   delete:
+ *     summary: Unregister from an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Unregistered successfully
+ */
 router.delete('/:id/unregister', authenticate, authorize('attendee'), async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -109,6 +222,26 @@ router.delete('/:id/unregister', authenticate, authorize('attendee'), async (req
 });
 
 // Get participants - organizer-only
+/**
+ * @swagger
+ * /events/{id}/participants:
+ *   get:
+ *     summary: List event participants
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of participants
+ *       403:
+ *         description: Forbidden (Organizer only)
+ */
 router.get('/:id/participants', authenticate, authorize('organizer'), async (req, res) => {
     try {
         const event = await Event.findById(req.params.id).populate('participants', 'name email');
@@ -128,7 +261,32 @@ router.get('/:id/participants', authenticate, authorize('organizer'), async (req
     }
 });
 
-// Update event: only the organizer who created it
+/**
+ * @swagger
+ * /events/{id}:
+ *   put:
+ *     summary: Update an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Event'
+ *     responses:
+ *       200:
+ *         description: Event updated
+ *       403:
+ *         description: Forbidden (Owner only)
+ */
 router.put('/:id', authenticate, authorize('organizer'), async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
@@ -154,7 +312,26 @@ router.put('/:id', authenticate, authorize('organizer'), async (req, res) => {
     }
 });
 
-// Delete event: only the organizer who created it
+/**
+ * @swagger
+ * /events/{id}:
+ *   delete:
+ *     summary: Delete an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event deleted
+ *       403:
+ *         description: Forbidden (Owner only)
+ */
 router.delete('/:id', authenticate, authorize('organizer'), async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
