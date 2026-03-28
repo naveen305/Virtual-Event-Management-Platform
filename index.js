@@ -16,6 +16,10 @@ app.get('/', (req, res) => {
     res.send('Hello, World!');
 });
 
+// Auth Routes
+const authRoutes = require('./routes/auth');
+app.use('/auth', authRoutes);
+
 // Server and Database initialization
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
