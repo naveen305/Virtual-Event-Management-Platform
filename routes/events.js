@@ -1,6 +1,7 @@
 const express = require('express');
 const Event = require('../models/Event');
 const { authenticate, authorize } = require('../middleware/auth');
+const { sendRegistrationEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -77,6 +78,9 @@ router.post('/:id/register', authenticate, authorize('attendee'), async (req, re
         await Event.findByIdAndUpdate(req.params.id, {
             $addToSet: { participants: req.user.id }
         });
+
+        // Send email notification asynchronously
+        await sendRegistrationEmail(req.user.email, event.title);
 
         res.status(200).json({ message: 'Successfully registered for the event' });
     } catch (err) {
