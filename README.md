@@ -23,7 +23,7 @@ A RESTful API for managing events, built with Node.js, Express, and MongoDB. Sup
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/event-management-api.git
+git clone https://github.com/naveen305/Virtual-Event-Management-Platform.git
 cd event-management-api
 npm install
 ```
