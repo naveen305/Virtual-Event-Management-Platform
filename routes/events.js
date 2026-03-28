@@ -49,6 +49,81 @@ router.get('/:id', authenticate, async (req, res) => {
     }
 });
 
+// Register attendee for an event
+router.post('/:id/register', authenticate, authorize('attendee'), async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Check for past event
+        if (event.date < new Date()) {
+            return res.status(400).json({ error: 'Event has already passed' });
+        }
+
+        // Cannot register for own event
+        if (event.organizer.toString() === req.user.id) {
+            return res.status(403).json({ error: 'Organizers cannot register for their own event' });
+        }
+
+        // Check if already registered
+        if (event.participants.includes(req.user.id)) {
+            return res.status(409).json({ error: 'You are already registered for this event' });
+        }
+
+        // Add participant
+        await Event.findByIdAndUpdate(req.params.id, {
+            $addToSet: { participants: req.user.id }
+        });
+
+        res.status(200).json({ message: 'Successfully registered for the event' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Unregister attendee from an event
+router.delete('/:id/unregister', authenticate, authorize('attendee'), async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Remove participant
+        await Event.findByIdAndUpdate(req.params.id, {
+            $pull: { participants: req.user.id }
+        });
+
+        res.status(200).json({ message: 'Successfully unregistered from the event' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Get participants - organizer-only
+router.get('/:id/participants', authenticate, authorize('organizer'), async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id).populate('participants', 'name email');
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Verify ownership
+        if (event.organizer.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied, only the organizer can view the participant list' });
+        }
+
+        res.status(200).json(event.participants);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // Update event: only the organizer who created it
 router.put('/:id', authenticate, authorize('organizer'), async (req, res) => {
     try {
