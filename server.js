@@ -5,24 +5,20 @@ const dotenv = require('dotenv');
 // Load environment variables from .env file
 dotenv.config();
 
-// Create an Express application
 const app = express();
-
-// Middleware to parse JSON bodies
 app.use(express.json());
 
-// Define a simple route
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
-
-// Auth Routes
+// Routes
 const authRoutes = require('./routes/auth');
-app.use('/auth', authRoutes);
-
-// Event Routes
 const eventRoutes = require('./routes/events');
+
+app.use('/auth', authRoutes);
 app.use('/events', eventRoutes);
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.send('Event Management API is running...');
+});
 
 // Server and Database initialization
 const PORT = process.env.PORT || 3000;
@@ -44,7 +40,7 @@ const startServer = async () => {
         });
     } catch (error) {
         console.error('Failed to start the server:', error.message);
-        process.exit(1); // Exit process with failure
+        process.exit(1);
     }
 };
 

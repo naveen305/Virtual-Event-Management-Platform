@@ -59,7 +59,7 @@ router.post('/:id/register', authenticate, authorize('attendee'), async (req, re
         }
 
         // Check for past event
-        if (event.date < new Date()) {
+        if (new Date(event.date) < new Date()) {
             return res.status(400).json({ error: 'Event has already passed' });
         }
 
@@ -135,13 +135,12 @@ router.put('/:id', authenticate, authorize('organizer'), async (req, res) => {
 
         // Verify ownership
         if (event.organizer.toString() !== req.user.id) {
-            return res.status(403).json({ error: 'Access denied, modification only allowed by the organizer' });
+            return res.status(403).json({ error: 'Access denied, modification only allowed by the creator' });
         }
 
-        const { title, description, date, time, location } = req.body;
         const updatedEvent = await Event.findByIdAndUpdate(
             req.params.id,
-            { title, description, date, time, location },
+            req.body,
             { new: true, runValidators: true }
         );
 
@@ -162,7 +161,7 @@ router.delete('/:id', authenticate, authorize('organizer'), async (req, res) => 
 
         // Verify ownership
         if (event.organizer.toString() !== req.user.id) {
-            return res.status(403).json({ error: 'Access denied, deletion only allowed by the organizer' });
+            return res.status(403).json({ error: 'Access denied, deletion only allowed by the creator' });
         }
 
         await Event.findByIdAndDelete(req.params.id);
